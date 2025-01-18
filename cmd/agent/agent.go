@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"sync"
 	"time"
 
 	"gorono/internal/memos"
@@ -13,20 +12,13 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type MemStorage struct {
-	gau    map[string]models.Gauge
-	count  map[string]models.Counter
-	mutter sync.RWMutex
-}
-
-// var memStor *MemStorage
 var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2
 
 func main() {
-	if err := foa4Agent(); err != nil {
-		log.Fatal("INTERVAL error ", err)
+	if err := initAgent(); err != nil {
+		log.Fatal("INTERVALS error ", err)
 		return
 	}
 	if err := run(); err != nil {
@@ -35,31 +27,28 @@ func main() {
 }
 
 func run() error {
-	memStor := MemStorage{} //memStor := new(MemStorage)
+	memStorage := []models.Metrics{}
 	for {
-		cunt := 0
+		cunt := int64(0)
 		for i := 0; i < reportInterval/pollInterval; i++ {
-			err := memos.GetMetrix(&memStor)
-			if err != nil {
-				log.Println(err, "getMetrix")
-			} else {
-				cunt++
-			}
+			memStorage = memos.GetMetrixFromOS()
+			cunt++
 			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
-
-		memStor.count["PollCount"] = counter(cunt)
-		bunch := makeBunchOfMetrics(&memStor)
-		log.Println(len(bunch))
-
-		err := postBunch(bunch)
+		for ind, metr := range memStorage {
+			if metr.ID == "PollCount" {
+				memStorage[ind].Delta = &cunt // в сам memStorage, metr - копия
+				break
+			}
+		}
+		err := postBunch(memStorage)
 		if err != nil {
 			log.Printf("AGENT postBunch ERROR %+v\n", err)
 		}
 	}
 }
 
-func postBunch(bunch []Metrics) error {
+func postBunch(bunch []models.Metrics) error {
 	marshalledBunch, err := json.Marshal(bunch)
 	if err != nil {
 		return err
@@ -84,13 +73,13 @@ func postBunch(bunch []Metrics) error {
 	})
 
 	req := httpc.R().
-		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Content-Encoding", "gzip"). // сжаtо
 		SetBody(compressedBunch).
 		SetHeader("Accept-Encoding", "gzip")
 
 	_, err = req.
 		SetDoNotParseResponse(false).
-		Post("/updates/")
+		Post("/updates/") // slash on the tile
 
 		//	log.Printf("%+v\n", resp)
 

@@ -10,7 +10,7 @@ import (
 type gauge = models.Gauge
 type counter = models.Counter
 
-func GetMetrix() []models.Metrics {
+func GetMetrixFromOS() []models.Metrics {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
 

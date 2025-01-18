@@ -20,3 +20,14 @@ func Pack2gzip(data2pack []byte) ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
+
+// func unpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
+// 	gzipReader, err := gzip.NewReader(data2unpack)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("gzip.NewReader %w ", err)
+// 	}
+// 	if err := gzipReader.Close(); err != nil {
+// 		return nil, fmt.Errorf("zr.Close %w ", err)
+// 	}
+// 	return gzipReader, nil
+// }

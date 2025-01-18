@@ -1,4 +1,4 @@
-package dbaser
+package basis
 
 import (
 	"context"
@@ -6,17 +6,14 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5"
+
+	"gorono/internal/models"
 )
 
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
-type Gauge float64
-type Counter int64
+type Metrics = models.Metrics
 
+type DBstruct struct {
+}
 
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
 	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
@@ -33,8 +30,11 @@ func TableCreation(ctx context.Context, db *pgx.Conn) error {
 }
 
 // -------------- put ONE metric to the table
-func TableUpSert(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
-	if (metr.MType == "gauge" && metr.Value == nil) || (metr.MType == "counter" && metr.Delta == nil) {
+func (gag DBstruct) PutMetric(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metr *Metrics) error {
+	//func (dataBase models.DBstruct) TableUpSert(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
+	if (metr.MType == "gauge" && metr.Value == nil) ||
+		(metr.MType == "counter" && metr.Delta == nil) ||
+		(metr.Value != nil && metr.Delta != nil) {
 		return fmt.Errorf("wrong metric %+v", metr)
 	}
 	var order string
@@ -57,7 +57,8 @@ func TableUpSert(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
 }
 
 // ------ get ONE metric from the table
-func TableGetMetric(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
+func (gag DBstruct) GetMetric(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metr *Metrics) (Metrics, error) {
+	//func TableGetMetric(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
 	switch metr.MType {
 	case "gauge":
 		var flo float64 // here we scan Value
@@ -65,7 +66,7 @@ func TableGetMetric(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
 		row := db.QueryRow(ctx, order, metr.ID)
 		err := row.Scan(&flo)
 		if err != nil {
-			return fmt.Errorf("error get %s gauge metric.  %w", metr.ID, err)
+			return *metr, fmt.Errorf("error get %s gauge metric.  %w", metr.ID, err)
 		}
 		metr.Value = &flo
 	case "counter":
@@ -74,17 +75,18 @@ func TableGetMetric(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
 		row := db.QueryRow(ctx, order, metr.ID)
 		err := row.Scan(&inta)
 		if err != nil {
-			return fmt.Errorf("error get %s counter metric.  %w", metr.ID, err)
+			return *metr, fmt.Errorf("error get %s counter metric.  %w", metr.ID, err)
 		}
 		metr.Delta = &inta
 	default:
-		return fmt.Errorf("wrong metric type \"%s\"", metr.MType)
+		return *metr, fmt.Errorf("wrong metric type \"%s\"", metr.MType)
 	}
-	return nil
+	return *metr, nil
 }
 
 // ----------- transaction. PUT ALL metrics to the tables ----------------------
-func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
+func (gag DBstruct) PutAllMetrics(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metras *[]Metrics) error {
+	//func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("error db.Begin  %[1]w", err)
@@ -116,7 +118,8 @@ func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 }
 
 // ------- get ALL metrics from the tables
-func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
+func (gag DBstruct) GetAllMetrics(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct) (*[]Metrics, error) {
+	//func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	zapros := `select 'counter' AS metrictype, metricname AS name, null AS value, value AS delta from counter
 		UNION
 	select 'gauge' AS metrictype, metricname as name, value as value, null as delta from gauge`
@@ -127,17 +130,18 @@ func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) err
 
 	rows, err := db.Query(ctx, zapros)
 	if err != nil {
-		return fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+		return nil, fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
 	}
+	metras := []Metrics{}
 	for rows.Next() {
 		err = rows.Scan(&metr.MType, &metr.ID, &metr.Value, &metr.Delta)
 		if err != nil {
-			return fmt.Errorf("error table Scan %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+			return nil, fmt.Errorf("error table Scan %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
 		}
-		*metras = append(*metras, metr)
+		metras = append(metras, metr)
 	}
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("err := rows.Err()  %w", err)
+		return nil, fmt.Errorf("err := rows.Err()  %w", err)
 	}
-	return nil
+	return &metras, nil
 }
