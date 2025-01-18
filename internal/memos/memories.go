@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"gorono/internal/models"
 	"log"
-
-	"github.com/jackc/pgx/v5"
+	"sync"
 )
 
-type Metrics = models.Metrics
-type MemStruct struct {
+type MemoryStorageStruct struct {
+	Gaugemetr map[string]models.Gauge
+	Countmetr map[string]models.Counter
+	mutter    *sync.RWMutex
 }
+type Metrics = models.Metrics
 
-func (gag MemStruct) PutMetric(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metr *Metrics) error {
-	memorial.Mutter.Lock()
-	defer memorial.Mutter.Unlock()
+func (memorial MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics) error {
+	memorial.mutter.Lock()
+	defer memorial.mutter.Unlock()
 	switch metr.MType {
 	case "gauge":
 		memorial.Gaugemetr[metr.ID] = models.Gauge(*metr.Value)
@@ -27,9 +29,9 @@ func (gag MemStruct) PutMetric(ctx context.Context, db *pgx.Conn, memorial *mode
 	return nil
 }
 
-func (gag MemStruct) GetMetric(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metr *Metrics) (Metrics, error) {
-	memorial.Mutter.RLock() // <---- MUTEX
-	defer memorial.Mutter.RUnlock()
+func (memorial MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
+	memorial.mutter.RLock() // <---- MUTEX
+	defer memorial.mutter.RUnlock()
 	switch metr.MType {
 	case "gauge":
 		if val, ok := memorial.Gaugemetr[metr.ID]; ok {
@@ -48,9 +50,9 @@ func (gag MemStruct) GetMetric(ctx context.Context, db *pgx.Conn, memorial *mode
 }
 
 // --- from []Metrics to memory Storage
-func (gag MemStruct) PutAllMetrics(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metras *[]Metrics) error {
-	memorial.Mutter.Lock()
-	defer memorial.Mutter.Unlock()
+func (memorial MemoryStorageStruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
+	memorial.mutter.Lock()
+	defer memorial.mutter.Unlock()
 
 	for _, metr := range *metras {
 		switch metr.MType {
@@ -70,10 +72,10 @@ func (gag MemStruct) PutAllMetrics(ctx context.Context, db *pgx.Conn, memorial *
 }
 
 // ----- from Memory Storage to []Metrics
-func (gag MemStruct) GetAllMetrics(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct) (*[]Metrics, error) {
+func (memorial MemoryStorageStruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
 
-	memorial.Mutter.RLock()
-	defer memorial.Mutter.RUnlock()
+	memorial.mutter.RLock()
+	defer memorial.mutter.RUnlock()
 
 	metras := []Metrics{}
 

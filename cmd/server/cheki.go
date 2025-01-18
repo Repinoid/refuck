@@ -13,7 +13,7 @@ func main() {
 
 	face = basis.DBstruct{}
 
-	face = memos.MemStruct{}
+	face = memos.MemoryStorageStruct{}
 
 	fmt.Printf("%+v\n", face)
 

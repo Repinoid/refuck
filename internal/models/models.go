@@ -2,9 +2,6 @@ package models
 
 import (
 	"context"
-	"sync"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type Metrics struct {
@@ -16,15 +13,9 @@ type Metrics struct {
 type Gauge float64
 type Counter int64
 
-type MemoryStorageStruct struct {
-	Gaugemetr map[string]Gauge
-	Countmetr map[string]Counter
-	Mutter    sync.RWMutex
-}
-
 type Inter interface {
-	GetMetric(ctx context.Context, db *pgx.Conn, memorial *MemoryStorageStruct, metr *Metrics) (Metrics, error)
-	PutMetric(ctx context.Context, db *pgx.Conn, memorial *MemoryStorageStruct, metr *Metrics) error
-	GetAllMetrics(ctx context.Context, db *pgx.Conn, memorial *MemoryStorageStruct) (*[]Metrics, error)
-	PutAllMetrics(ctx context.Context, db *pgx.Conn, memorial *MemoryStorageStruct, metras *[]Metrics) error
+	GetMetric(ctx context.Context, metr *Metrics) (Metrics, error)
+	PutMetric(ctx context.Context, metr *Metrics) error
+	GetAllMetrics(ctx context.Context) (*[]Metrics, error)
+	PutAllMetrics(ctx context.Context, metras *[]Metrics) error
 }

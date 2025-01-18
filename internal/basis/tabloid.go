@@ -13,6 +13,7 @@ import (
 type Metrics = models.Metrics
 
 type DBstruct struct {
+	db *pgx.Conn
 }
 
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
@@ -30,7 +31,8 @@ func TableCreation(ctx context.Context, db *pgx.Conn) error {
 }
 
 // -------------- put ONE metric to the table
-func (gag DBstruct) PutMetric(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metr *Metrics) error {
+func (dataBase DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
+	db := dataBase.db
 	//func (dataBase models.DBstruct) TableUpSert(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
 	if (metr.MType == "gauge" && metr.Value == nil) ||
 		(metr.MType == "counter" && metr.Delta == nil) ||
@@ -57,8 +59,8 @@ func (gag DBstruct) PutMetric(ctx context.Context, db *pgx.Conn, memorial *model
 }
 
 // ------ get ONE metric from the table
-func (gag DBstruct) GetMetric(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metr *Metrics) (Metrics, error) {
-	//func TableGetMetric(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
+func (dataBase DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
+	db := dataBase.db
 	switch metr.MType {
 	case "gauge":
 		var flo float64 // here we scan Value
@@ -85,7 +87,8 @@ func (gag DBstruct) GetMetric(ctx context.Context, db *pgx.Conn, memorial *model
 }
 
 // ----------- transaction. PUT ALL metrics to the tables ----------------------
-func (gag DBstruct) PutAllMetrics(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct, metras *[]Metrics) error {
+func (dataBase DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
+	db := dataBase.db
 	//func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -118,7 +121,8 @@ func (gag DBstruct) PutAllMetrics(ctx context.Context, db *pgx.Conn, memorial *m
 }
 
 // ------- get ALL metrics from the tables
-func (gag DBstruct) GetAllMetrics(ctx context.Context, db *pgx.Conn, memorial *models.MemoryStorageStruct) (*[]Metrics, error) {
+func (dataBase DBstruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
+	db := dataBase.db
 	//func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	zapros := `select 'counter' AS metrictype, metricname AS name, null AS value, value AS delta from counter
 		UNION
