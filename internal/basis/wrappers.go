@@ -1,27 +1,39 @@
-package dbaser
+package basis
 
 import (
-	"app/internal/models"
+	"context"
 	"time"
 )
 
 var AttemptDelays = []int{1, 3, 5}
 
-type MetricValueTypes interface {
-	int64 | float64
-}
-type Metrics = models.Metrics
-
-func TableMetricWrapper(origFunc func(MetricBaseStruct *StructForDB, metr *Metrics) error) func(MetricBaseStruct *StructForDB, metr *Metrics) error {
-	wrappedFunc := func(MetricBaseStruct *StructForDB, metr *Metrics) error {
-		err := origFunc(MetricBaseStruct, metr)
+func GetMetricWrapper(origFunc func(ctx context.Context, metr *Metrics) (Metrics,
+	error)) func(ctx context.Context, metr *Metrics) (Metrics, error) {
+	wrappedFunc := func(ctx context.Context, metr *Metrics) (Metrics, error) {
+		metrix, err := origFunc(ctx, metr)
 		if err != nil {
 			for _, delay := range AttemptDelays {
 				time.Sleep(time.Duration(delay) * time.Second)
-				if err = origFunc(MetricBaseStruct, metr); err == nil {
+				metrix, err = origFunc(ctx, metr)
+				if err == nil {
 					break
 				}
-				//				fmt.Println(delay, " MetricWrapper !")
+			}
+		}
+		return metrix, err
+	}
+	return wrappedFunc
+}
+func PutMetricWrapper(origFunc func(ctx context.Context, metr *Metrics) error) func(ctx context.Context, metr *Metrics) error {
+	wrappedFunc := func(ctx context.Context, metr *Metrics) error {
+		err := origFunc(ctx, metr)
+		if err != nil {
+			for _, delay := range AttemptDelays {
+				time.Sleep(time.Duration(delay) * time.Second)
+				err := origFunc(ctx, metr)
+				if err == nil {
+					break
+				}
 			}
 		}
 		return err
@@ -29,34 +41,34 @@ func TableMetricWrapper(origFunc func(MetricBaseStruct *StructForDB, metr *Metri
 	return wrappedFunc
 }
 
-func TableBuncherWrapper(origFunc func(MetricBaseStruct *StructForDB, metrArray []Metrics) error) func(MetricBaseStruct *StructForDB, metrArray []Metrics) error {
-	wrappedFunc := func(MetricBaseStruct *StructForDB, metrArray []Metrics) error {
-		err := origFunc(MetricBaseStruct, metrArray)
+func GetAllMetricsWrapper(origFunc func(ctx context.Context) (*[]Metrics, error)) func(ctx context.Context) (*[]Metrics, error) {
+	wrappedFunc := func(ctx context.Context) (*[]Metrics, error) {
+		metras, err := origFunc(ctx)
 		if err != nil {
 			for _, delay := range AttemptDelays {
 				time.Sleep(time.Duration(delay) * time.Second)
-				if err = origFunc(MetricBaseStruct, metrArray); err == nil {
+				metras, err = origFunc(ctx)
+				if err == nil {
 					break
 				}
-				//				fmt.Println(delay, " BUNCHWrapper !")
 			}
 		}
-		return err
+		return metras, err
 	}
 	return wrappedFunc
 }
 
-func TableGetAllsWrapper[MV MetricValueTypes](origFunc func(MetricBaseStruct *StructForDB, mappa *map[string]MV) error) func(MetricBaseStruct *StructForDB,
-	mappa *map[string]MV) error {
-	wrappedFunc := func(MetricBaseStruct *StructForDB, mappa *map[string]MV) error {
-		err := origFunc(MetricBaseStruct, mappa)
+// PutAllMetrics(ctx context.Context, metras *[]Metrics) error
+func PutAllMetricsWrapper(origFunc func(ctx context.Context, metras *[]Metrics) error) func(ctx context.Context, metras *[]Metrics) error {
+	wrappedFunc := func(ctx context.Context, metras *[]Metrics) error {
+		err := origFunc(ctx, metras)
 		if err != nil {
 			for _, delay := range AttemptDelays {
 				time.Sleep(time.Duration(delay) * time.Second)
-				if err = origFunc(MetricBaseStruct, mappa); err == nil {
+				err := origFunc(ctx, metras)
+				if err == nil {
 					break
 				}
-				//				fmt.Println(delay, "TableGetAllsWrapper !")
 			}
 		}
 		return err

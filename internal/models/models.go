@@ -23,3 +23,12 @@ type Inter interface {
 	SaveMS(fnam string) error
 	Saver(fnam string, storeInterval int) error
 }
+
+func IsMetricsOK(metr Metrics) bool {
+	if (metr.MType == "counter" && metr.Delta == nil) ||
+		(metr.MType == "gauge" && metr.Value == nil) ||
+		(metr.Delta != nil && metr.Value != nil) {
+		return false
+	}
+	return true
+}

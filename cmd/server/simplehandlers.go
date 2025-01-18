@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"gorono/internal/basis"
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
@@ -27,7 +28,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	mutter.RLock() // <---- MUTEX
 	defer mutter.RUnlock()
 
-	metras, err := inter.GetAllMetrics(ctx)
+	metras, err := basis.GetAllMetricsWrapper(inter.GetAllMetrics)(ctx)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -52,8 +53,8 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
-	metr, err := inter.GetMetric(ctx, &metr)
-	if err != nil { // if no such metric, type+name
+	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) //inter.GetMetric(ctx, &metr)
+	if err != nil || !models.IsMetricsOK(metr){                                                  // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
 		return
@@ -94,7 +95,7 @@ func putMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		metr = models.Metrics{ID: metricName, MType: "counter", Delta: &out}
-		inter.PutMetric(ctx, &metr)
+	//	basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr) //inter.PutMetric(ctx, &metr)
 	case "gauge":
 		out, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
@@ -103,13 +104,13 @@ func putMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		metr = models.Metrics{ID: metricName, MType: "gauge", Value: &out}
-		inter.PutMetric(ctx, &metr)
 	default:
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	metr, err := inter.GetMetric(ctx, &metr)
+	basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)              //inter.PutMetric(ctx, &metr)
+	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) // inter.GetMetric(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)

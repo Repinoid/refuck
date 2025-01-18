@@ -32,13 +32,10 @@ func TableCreation(ctx context.Context, db *pgx.Conn) error {
 
 // -------------- put ONE metric to the table
 func (dataBase DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
-	db := dataBase.DB
-	//func (dataBase models.DBstruct) TableUpSert(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
-	if (metr.MType == "gauge" && metr.Value == nil) ||
-		(metr.MType == "counter" && metr.Delta == nil) ||
-		(metr.Value != nil && metr.Delta != nil) {
-		return fmt.Errorf("wrong metric %+v", metr)
+	if !models.IsMetricsOK(*metr) {
+		return fmt.Errorf("bad metric %+v", metr)
 	}
+	db := dataBase.DB
 	var order string
 	switch metr.MType {
 	case "gauge":
@@ -96,7 +93,7 @@ func (dataBase DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) e
 	}
 	var order string
 	for _, metr := range *metras {
-		if (metr.MType == "gauge" && metr.Value == nil) || (metr.MType == "counter" && metr.Delta == nil) {
+		if !models.IsMetricsOK(metr) {
 			log.Printf("wrong metric %+v", metr)
 			continue
 		}

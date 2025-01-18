@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gorono/internal/basis"
 	"gorono/internal/models"
 	"io"
 	"net/http"
@@ -15,7 +16,7 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	req.Body.Close()
 	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest)
+		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
@@ -24,13 +25,18 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	metr := Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
 	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest)
+		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	metr, err = inter.GetMetric(ctx, &metr)
+	if !models.IsMetricsOK(metr) {
+		rwr.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		return
+	}
+	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr)
 	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest)
+		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
@@ -43,15 +49,6 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 	rwr.WriteHeader(http.StatusOK)
 
-}
-
-func isMetricsOK(metr Metrics) bool {
-	if (metr.MType == "counter" && metr.Delta == nil) ||
-		(metr.MType == "gauge" && metr.Value == nil) ||
-		(metr.Delta != nil && metr.Value != nil) {
-		return false
-	}
-	return true
 }
 
 func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
@@ -72,18 +69,18 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !isMetricsOK(metr) {
+	if !models.IsMetricsOK(metr) {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, "bad metric %+v\n", metr)
 		return
 	}
-	err = inter.PutMetric(ctx, &metr)
+	err = basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
-	metr, err = inter.GetMetric(ctx, &metr)
+	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) //inter.GetMetric(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -117,7 +114,7 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
-	err = inter.PutAllMetrics(ctx, &metras)
+	err = basis.PutAllMetricsWrapper(inter.PutAllMetrics)(ctx, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
