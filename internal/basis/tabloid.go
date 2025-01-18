@@ -13,7 +13,7 @@ import (
 type Metrics = models.Metrics
 
 type DBstruct struct {
-	db *pgx.Conn
+	DB *pgx.Conn
 }
 
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
@@ -32,7 +32,7 @@ func TableCreation(ctx context.Context, db *pgx.Conn) error {
 
 // -------------- put ONE metric to the table
 func (dataBase DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
-	db := dataBase.db
+	db := dataBase.DB
 	//func (dataBase models.DBstruct) TableUpSert(ctx context.Context, db *pgx.Conn, metr *Metrics) error {
 	if (metr.MType == "gauge" && metr.Value == nil) ||
 		(metr.MType == "counter" && metr.Delta == nil) ||
@@ -60,7 +60,7 @@ func (dataBase DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
 
 // ------ get ONE metric from the table
 func (dataBase DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
-	db := dataBase.db
+	db := dataBase.DB
 	switch metr.MType {
 	case "gauge":
 		var flo float64 // here we scan Value
@@ -88,7 +88,7 @@ func (dataBase DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics,
 
 // ----------- transaction. PUT ALL metrics to the tables ----------------------
 func (dataBase DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
-	db := dataBase.db
+	db := dataBase.DB
 	//func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -122,7 +122,7 @@ func (dataBase DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) e
 
 // ------- get ALL metrics from the tables
 func (dataBase DBstruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
-	db := dataBase.db
+	db := dataBase.DB
 	//func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	zapros := `select 'counter' AS metrictype, metricname AS name, null AS value, value AS delta from counter
 		UNION
@@ -148,4 +148,20 @@ func (dataBase DBstruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) 
 		return nil, fmt.Errorf("err := rows.Err()  %w", err)
 	}
 	return &metras, nil
+}
+func (dataBase DBstruct) LoadMS(fnam string) error {
+	return nil
+}
+func (dataBase DBstruct) SaveMS(fnam string) error {
+	return nil
+}
+func (dataBase DBstruct) Saver(fnam string, i int) error {
+	return nil
+}
+func (dataBase DBstruct) Ping(ctx context.Context) error {
+	err := dataBase.DB.Ping(ctx)
+	if err != nil {
+		return fmt.Errorf("no ping %w", err)
+	}
+	return nil
 }

@@ -7,7 +7,7 @@ import (
 	"gorono/internal/models"
 )
 
-func main() {
+func main1() {
 
 	var face models.Inter
 
