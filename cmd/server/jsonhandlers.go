@@ -14,48 +14,37 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
-	req.Body.Close()
+	defer req.Body.Close()
 	if err != nil {
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	//var inta int64
-	//var flo float64
-	metr := Metrics{}
+	var inta int64
+	var flo float64
+	metr := Metrics{Value: &flo, Delta: &inta}
 	err = json.Unmarshal([]byte(telo), &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	if !models.IsMetricsOK(metr) {
-		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		return
-	}
-	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr)
+	metrix := Metrics{ID: metr.ID, MType: metr.MType}
+	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metrix)
 	if err != nil {
 		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 		return
 	}
 	rwr.WriteHeader(http.StatusOK)
-	switch metr.MType {
-	case "gauge":
-		fmt.Fprintf(rwr, `{"%s":"%g"}`, metr.ID, *metr.Value)
-	case "counter":
-		fmt.Fprintf(rwr, `{"%s":"%d"}`, metr.ID, *metr.Delta)
-	}
-	rwr.WriteHeader(http.StatusOK)
-
+	json.NewEncoder(rwr).Encode(metr)
 }
 
 func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
-	req.Body.Close()
+	defer req.Body.Close()
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
@@ -80,19 +69,15 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
-	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) //inter.GetMetric(ctx, &metr)
+	metrix := Metrics{ID: metr.ID, MType: metr.MType}
+	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metrix) //inter.GetMetric(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	rwr.WriteHeader(http.StatusOK)
-	switch metr.MType {
-	case "gauge":
-		fmt.Fprintf(rwr, `{"%s udpated to":"%g"}`, metr.ID, *metr.Value)
-	case "counter":
-		fmt.Fprintf(rwr, `{"%s udpated to":"%d"}`, metr.ID, *metr.Delta)
-	}
+	json.NewEncoder(rwr).Encode(metr)
 
 	if storeInterval == 0 {
 		_ = inter.SaveMS(fileStorePath)

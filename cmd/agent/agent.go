@@ -36,7 +36,7 @@ func run() error {
 			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
 		for ind, metr := range memStorage {
-			if metr.ID == "PollCount" {
+			if metr.ID == "PollCount" && metr.MType == "counter" {
 				memStorage[ind].Delta = &cunt // в сам memStorage, metr - копия
 				break
 			}
