@@ -25,7 +25,8 @@ type Inter interface {
 }
 
 func IsMetricsOK(metr Metrics) bool {
-	if (metr.MType == "counter" && metr.Delta == nil) ||
+	if (metr.MType != "gauge" && metr.MType != "counter") ||
+		(metr.MType == "counter" && metr.Delta == nil) ||
 		(metr.MType == "gauge" && metr.Value == nil) ||
 		(metr.Delta != nil && metr.Value != nil) {
 		return false

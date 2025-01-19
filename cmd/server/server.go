@@ -15,6 +15,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sync"
 
 	"gorono/internal/basis"
 	"gorono/internal/memos"
@@ -30,6 +31,8 @@ type counter = models.Counter
 
 type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
+
+var mtx sync.RWMutex
 
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
@@ -63,7 +66,7 @@ func run() error {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", putMetric).Methods("POST")
-	router.HandleFunc("/update/", treatJSONMetric).Methods("POST")
+	router.HandleFunc("/update/", putJSONMetric).Methods("POST")
 	router.HandleFunc("/updates/", buncheras).Methods("POST")
 	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
 	router.HandleFunc("/value/", getJSONMetric).Methods("POST")

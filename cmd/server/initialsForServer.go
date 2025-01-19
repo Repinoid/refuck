@@ -84,6 +84,7 @@ func InitServer() error {
 		memStor = MemStorage{
 			Gaugemetr: make(map[string]gauge),
 			Countmetr: make(map[string]counter),
+			Mutter:    &mtx,
 		}
 		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
@@ -94,6 +95,7 @@ func InitServer() error {
 		memStor = MemStorage{
 			Gaugemetr: make(map[string]gauge),
 			Countmetr: make(map[string]counter),
+			Mutter:    &mtx,
 		}
 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
