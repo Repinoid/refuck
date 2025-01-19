@@ -1,2 +1,2 @@
-{"Gaugemetr":{"nam":45677.12345678901},"Countmetr":{"nam":45}}
+{"Gaugemetr":{"GetSet35":622020.7871657867},"Countmetr":{}}
 

@@ -111,7 +111,7 @@ type MStorJSON struct {
 	Countmetr map[string]models.Counter
 }
 
-func UnmarshalMS(memorial *MemoryStorageStruct, data []byte) error {
+func (memorial *MemoryStorageStruct) UnmarshalMS(data []byte) error {
 	memor := MStorJSON{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
@@ -135,7 +135,7 @@ func MarshalMS(memorial *MemoryStorageStruct) ([]byte, error) {
 	return append(buf.Bytes(), '\n'), err
 }
 
-func (memorial MemoryStorageStruct) LoadMS(fnam string) error {
+func (memorial *MemoryStorageStruct) LoadMS(fnam string) error {
 	phil, err := os.OpenFile(fnam, os.O_RDONLY, 0666)
 	if err != nil {
 		return fmt.Errorf("file %s Open error %v", fnam, err)
@@ -145,18 +145,18 @@ func (memorial MemoryStorageStruct) LoadMS(fnam string) error {
 	if err != nil {
 		return fmt.Errorf("file %s Read error %v", fnam, err)
 	}
-	err = UnmarshalMS(&memorial, data)
+	err = memorial.UnmarshalMS(data)
 	if err != nil {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
 	}
 	return nil
 }
-func (memorial MemoryStorageStruct) SaveMS(fnam string) error {
+func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
 	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return fmt.Errorf("file %s Open error %v", fnam, err)
 	}
-	march, err := MarshalMS(&memorial)
+	march, err := MarshalMS(memorial)
 	if err != nil {
 		return fmt.Errorf(" Memstorage Marshal error %v", err)
 	}

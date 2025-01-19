@@ -54,7 +54,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
 	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) //inter.GetMetric(ctx, &metr)
-	if err != nil || !models.IsMetricsOK(metr){                                                  // if no such metric, type+name
+	if err != nil || !models.IsMetricsOK(metr) {                     // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
 		return
@@ -124,7 +124,7 @@ func putMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"%s udpated to":"%d"}`, metr.ID, *metr.Delta)
 	}
 	if storeInterval == 0 {
-		_ = inter.SaveMS(fileStorePath)
+		_ = memStor.SaveMS(fileStorePath)
 	}
 }
 

@@ -35,6 +35,7 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if strings.Contains(err.Error(), "unknown metric") {
+		//rwr.WriteHeader(444) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
 		rwr.WriteHeader(http.StatusNotFound) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
 		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 		return
@@ -84,7 +85,7 @@ func putJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(rwr).Encode(metr)
 
 	if storeInterval == 0 {
-		_ = inter.SaveMS(fileStorePath)
+		_ = memStor.SaveMS(fileStorePath)
 	}
 }
 

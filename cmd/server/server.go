@@ -49,11 +49,11 @@ func main() {
 	}
 
 	if reStore {
-		_ = inter.LoadMS(fileStorePath)
+		_ = memStor.LoadMS(fileStorePath)
 	}
 
 	if storeInterval > 0 {
-		go inter.Saver(fileStorePath, storeInterval)
+		go memStor.Saver(fileStorePath, storeInterval)
 	}
 
 	if err := run(); err != nil {
