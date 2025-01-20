@@ -97,6 +97,7 @@ func InitServer() error {
 		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
+	dbStorage = &basis.DBstruct{}
 	ctx = context.Background()
 	err = startDB(ctx, dbEndPoint)
 	if err != nil {
