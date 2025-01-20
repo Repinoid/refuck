@@ -65,14 +65,14 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 
 	if !models.IsMetricsOK(metr) {
 		rwr.WriteHeader(http.StatusBadRequest)
-		sugar.Infof("bad Metric %+v\n", metr)
+		sugar.Debugf("bad Metric %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	err = basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
-		sugar.Infof("PutMetricWrapper %+v\n", metr)
+		sugar.Debugf("PutMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
@@ -80,7 +80,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metrix) //inter.GetMetric(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
-		sugar.Infof("GetMetricWrapper %+v\n", metr)
+		sugar.Debugf("GetMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
