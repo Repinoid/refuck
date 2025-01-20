@@ -5,7 +5,7 @@
 *.so
 *.dylib
 *.txt
-t*.bat
+#t*.bat
 
 #.gitignore
 
