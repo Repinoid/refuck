@@ -20,8 +20,8 @@ type Inter interface {
 	PutAllMetrics(ctx context.Context, metras *[]Metrics) error
 	Ping(ctx context.Context) error
 	LoadMS(fnam string) error
-	//SaveMS(fnam string) error
-	//Saver(fnam string, storeInterval int) error
+	SaveMS(fnam string) error
+	Saver(fnam string, storeInterval int) error
 }
 
 func IsMetricsOK(metr Metrics) bool {
