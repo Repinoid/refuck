@@ -11,13 +11,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func badPost(rwr http.ResponseWriter, req *http.Request) {
+func BadPost(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	rwr.WriteHeader(http.StatusNotFound)
 	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 }
 
-func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
+func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	if req.URL.Path != "/" { // if GET with wrong arguments structure
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -47,7 +47,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getMetric(rwr http.ResponseWriter, req *http.Request) {
+func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
 	metricType := vars["metricType"]
@@ -62,10 +62,10 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	switch metricType {
 	case "gauge":
 		rwr.WriteHeader(http.StatusOK)
-		fmt.Fprintf(rwr, `{"%s":"%g"}`, metricName, *metr.Value)
+		fmt.Fprint(rwr, *metr.Value)
 	case "counter":
 		rwr.WriteHeader(http.StatusOK)
-		fmt.Fprintf(rwr, `{"%s":"%d"}`, metricName, *metr.Delta)
+		fmt.Fprint(rwr, *metr.Delta)
 	default:
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric type":"%s"}`, metricType)
@@ -73,7 +73,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func putMetric(rwr http.ResponseWriter, req *http.Request) {
+func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
@@ -119,16 +119,16 @@ func putMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.WriteHeader(http.StatusOK)
 	switch metr.MType {
 	case "gauge":
-		fmt.Fprintf(rwr, `{"%s udpated to":"%g"}`, metr.ID, *metr.Value)
+		fmt.Fprint(rwr, *metr.Value)
 	case "counter":
-		fmt.Fprintf(rwr, `{"%s udpated to":"%d"}`, metr.ID, *metr.Delta)
+		fmt.Fprint(rwr, *metr.Delta)
 	}
 	if storeInterval == 0 {
 		_ = memStor.SaveMS(fileStorePath)
 	}
 }
 
-func dbPinger(rwr http.ResponseWriter, req *http.Request) {
+func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
 	err := inter.Ping(ctx)
 	if err != nil {

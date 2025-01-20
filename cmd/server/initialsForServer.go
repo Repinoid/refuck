@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"gorono/internal/basis"
-	"log"
 	"os"
 	"strconv"
 
@@ -28,7 +27,7 @@ func InitServer() error {
 		var err error
 		storeInterval, err = strconv.Atoi(enva)
 		if err != nil {
-			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
+			sugar.Infof("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
 	}
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
@@ -44,7 +43,7 @@ func InitServer() error {
 		var err error
 		reStore, err = strconv.ParseBool(enva)
 		if err != nil {
-			log.Printf("RESTORE error value %s\t error %v", enva, err)
+			sugar.Infof("RESTORE error value %s\t error %v", enva, err)
 		}
 		//	return nil
 	}
@@ -79,13 +78,13 @@ func InitServer() error {
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		dbEndPoint = dbFlag
 	}
-	memStor = MemStorage{
+	memStor = &MemStorage{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
 		Mutter:    &mtx,
 	}
 	if dbEndPoint == "" {
-		log.Println("No base in Env variable and command line argument")
+		sugar.Infoln("No base in Env variable and command line argument")
 		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
@@ -93,7 +92,7 @@ func InitServer() error {
 	err := startDB(ctx, dbEndPoint)
 	if err != nil {
 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
-		log.Printf("Can't connect to DB %s\n", dbEndPoint)
+		sugar.Infof("Can't connect to DB %s\n", dbEndPoint)
 		return nil
 	}
 	inter = dbStorage // data base as Metric Storage

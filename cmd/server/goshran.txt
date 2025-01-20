@@ -1,2 +1,2 @@
-{"Gaugemetr":{"GetSet35":622020.7871657867},"Countmetr":{}}
+{"Gaugemetr":{"GetSet35":622020.7871657867,"zasdfr":45634569.9},"Countmetr":{}}
 
