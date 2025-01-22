@@ -16,6 +16,20 @@ type DBstruct struct {
 	DB *pgx.Conn
 }
 
+func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
+	dbStorage := &DBstruct{}
+	baza, err := pgx.Connect(ctx, dbEndPoint)
+	if err != nil {
+		return nil, fmt.Errorf("can't connect to DB %s err %w", dbEndPoint, err)
+	}
+	err = TableCreation(ctx, baza)
+	if err != nil {
+		return nil, fmt.Errorf("can't create tables in DB %s err %w", dbEndPoint, err)
+	}
+	dbStorage.DB = baza
+	return dbStorage, nil
+}
+
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
 	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
 	tag, err := db.Exec(ctx, crea)
@@ -112,7 +126,9 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
+			defer tx.Rollback(ctx)
 			log.Printf("error put %+v. error is %v", metr, err)
+			return err
 		}
 	}
 	return tx.Commit(ctx)
