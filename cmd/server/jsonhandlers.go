@@ -142,6 +142,20 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
+
+	if key != "" {
+		keyB := md5.Sum([]byte(key)) //[]byte(key)
+		toencrypt, _ := json.Marshal(&metras)
+
+		coded, err := privacy.EncryptB2B(toencrypt, keyB[:])
+		if err != nil {
+			return
+		}
+		ha := privacy.MakeHash(nil, coded, keyB[:])
+		haHex = hex.EncodeToString(ha)
+		rwr.Header().Add("HashSHA256", haHex)
+	}
+
 	rwr.WriteHeader(http.StatusOK)
 	json.NewEncoder(rwr).Encode(&metras)
 }
