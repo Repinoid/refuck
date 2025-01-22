@@ -17,6 +17,7 @@ import (
 var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2
+var key = ""
 
 func main() {
 	if err := initAgent(); err != nil {
@@ -56,17 +57,20 @@ func postBunch(bunch []models.Metrics) error {
 		return err
 	}
 
-	keyB, _ := privacy.RandBytes(32)
-
-	coded, err := privacy.EncryptB2B(marshalledBunch, keyB)
-	if err != nil {
-		return err
+	//keyB, _ := privacy.RandBytes(32)
+	var haHex string
+	if key != "" {
+		keyB := []byte(key)
+		coded, err := privacy.EncryptB2B(marshalledBunch, keyB)
+		if err != nil {
+			return err
+		}
+		codedWkey := append(keyB, coded...)
+		ha := privacy.MakeHash(nil, codedWkey, keyB)
+		haHex = hex.EncodeToString(ha)
+		marshalledBunch = codedWkey
 	}
-	codedWkey := append(keyB, coded...)
-	ha := privacy.MakeHash(nil, codedWkey, keyB)
-	haHex := hex.EncodeToString(ha)
-
-	compressedBunch, err := middlas.Pack2gzip(codedWkey)
+	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
 	if err != nil {
 		return err
 	}
@@ -89,11 +93,11 @@ func postBunch(bunch []models.Metrics) error {
 	req := httpc.R().
 		SetHeader("Content-Encoding", "gzip"). // сжаtо
 		SetBody(compressedBunch).
-		SetHeader("Accept-Encoding", "gzip").
-		SetAuthToken(haHex).
-		SetHeader("HashSHA256", haHex)
+		SetHeader("Accept-Encoding", "gzip")
 
-	req.Header.Add("HashSHA256", haHex)
+	if key != "" {
+		req.Header.Add("HashSHA256", haHex)
+	}
 
 	_, err = req.
 		SetDoNotParseResponse(false).
