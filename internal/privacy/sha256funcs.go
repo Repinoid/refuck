@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 )
 
-func encryptB2B(bytesToEncrypt, key []byte) (encryptedString []byte, err error) {
+func EncryptB2B(bytesToEncrypt, key []byte) (encrypted []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func encryptB2B(bytesToEncrypt, key []byte) (encryptedString []byte, err error) 
 	ciphertext := aesGCM.Seal(nonce, nonce, bytesToEncrypt, nil)
 	return ciphertext, nil
 }
-func decryptB2B(encrypted, key []byte) (decrypted []byte, err error) {
+func DecryptB2B(encrypted, key []byte) (decrypted []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func RandBytes(n int) ([]byte, error) {
 	}
 	return b, nil
 }
-func makeHash(prior, data, keyB []byte) []byte {
+func MakeHash(prior, data, keyB []byte) []byte {
 	h := hmac.New(sha256.New, keyB) // New returns a new HMAC hash using the given hash.Hash type and key.
 	h.Write(data)                   // func (hash.Hash) Sum(b []byte) []byte
 	dst := h.Sum(prior)             //Sum appends the current hash to b and returns the resulting slice. It does not change the underlying hash state.

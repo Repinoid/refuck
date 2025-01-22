@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"gorono/internal/memos"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
+	"gorono/internal/privacy"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -53,10 +55,22 @@ func postBunch(bunch []models.Metrics) error {
 	if err != nil {
 		return err
 	}
-	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
+
+	keyB, _ := privacy.RandBytes(32)
+
+	coded, err := privacy.EncryptB2B(marshalledBunch, keyB)
 	if err != nil {
 		return err
 	}
+	codedWkey := append(keyB, coded...)
+	ha := privacy.MakeHash(nil, codedWkey, keyB)
+	haHex := hex.EncodeToString(ha)
+
+	compressedBunch, err := middlas.Pack2gzip(codedWkey)
+	if err != nil {
+		return err
+	}
+
 	httpc := resty.New() //
 	httpc.SetBaseURL("http://" + host)
 
@@ -75,7 +89,8 @@ func postBunch(bunch []models.Metrics) error {
 	req := httpc.R().
 		SetHeader("Content-Encoding", "gzip"). // сжаtо
 		SetBody(compressedBunch).
-		SetHeader("Accept-Encoding", "gzip")
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("HashSHA256", haHex)
 
 	_, err = req.
 		SetDoNotParseResponse(false).
