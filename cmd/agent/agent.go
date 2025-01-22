@@ -90,7 +90,10 @@ func postBunch(bunch []models.Metrics) error {
 		SetHeader("Content-Encoding", "gzip"). // сжаtо
 		SetBody(compressedBunch).
 		SetHeader("Accept-Encoding", "gzip").
+		SetAuthToken(haHex).
 		SetHeader("HashSHA256", haHex)
+
+	req.Header.Add("HashSHA256", haHex)
 
 	_, err = req.
 		SetDoNotParseResponse(false).

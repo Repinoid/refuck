@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"gorono/internal/basis"
 	"gorono/internal/models"
+	"gorono/internal/privacy"
 	"io"
 	"net/http"
 	"strings"
@@ -101,6 +103,28 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer req.Body.Close()
+	
+	haHex := req.Header.Get("HashSHA256")
+	haInHeader, err := hex.DecodeString(haHex)
+	if err != nil {
+		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+		return
+	}
+	keyB := telo[:32]
+	ha := privacy.MakeHash(nil, telo, keyB)
+	if string(ha) != string(haInHeader) {
+		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
+		return
+	}
+
+	telo, err = privacy.DecryptB2B(telo[32:], keyB)
+	if err != nil {
+		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+		return
+	}
 
 	buf := bytes.NewBuffer(telo)
 	metras := []models.Metrics{}
