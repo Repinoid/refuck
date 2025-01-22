@@ -11,7 +11,8 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "args": [
-                "-i=5",
+          //      "-i=5",
+                "-k=pass"
                 // "-d=postgres://postgres:passwordas@localhost:5432/forgo"
             ]
         }

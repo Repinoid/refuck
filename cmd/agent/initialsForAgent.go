@@ -36,7 +36,7 @@ func initAgent() error {
 
 	var hostFlag string
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
-	flag.StringVar(&key, "a", key, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
 	flag.Parse()

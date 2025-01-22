@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -103,7 +104,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer req.Body.Close()
-	
+
 	haHex := req.Header.Get("HashSHA256")
 	haInHeader, err := hex.DecodeString(haHex)
 	if err != nil {
@@ -111,21 +112,22 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
-	keyB := telo[:32]
-	ha := privacy.MakeHash(nil, telo, keyB)
-	if string(ha) != string(haInHeader) {
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
-		return
-	}
+	if key != "" {
+		keyB := md5.Sum([]byte(key)) //[]byte(key)
+		ha := privacy.MakeHash(nil, telo, keyB[:])
+		if string(ha) != string(haInHeader) {
+			rwr.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
+			return
+		}
 
-	telo, err = privacy.DecryptB2B(telo[32:], keyB)
-	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		return
+		telo, err = privacy.DecryptB2B(telo, keyB[:])
+		if err != nil {
+			rwr.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+			return
+		}
 	}
-
 	buf := bytes.NewBuffer(telo)
 	metras := []models.Metrics{}
 	err = json.NewDecoder(buf).Decode(&metras)

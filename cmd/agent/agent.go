@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"log"
@@ -60,15 +61,15 @@ func postBunch(bunch []models.Metrics) error {
 	//keyB, _ := privacy.RandBytes(32)
 	var haHex string
 	if key != "" {
-		keyB := []byte(key)
-		coded, err := privacy.EncryptB2B(marshalledBunch, keyB)
+		keyB := md5.Sum([]byte(key)) //[]byte(key)
+
+		coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
 		if err != nil {
 			return err
 		}
-		codedWkey := append(keyB, coded...)
-		ha := privacy.MakeHash(nil, codedWkey, keyB)
+		ha := privacy.MakeHash(nil, coded, keyB[:])
 		haHex = hex.EncodeToString(ha)
-		marshalledBunch = codedWkey
+		marshalledBunch = coded
 	}
 	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
 	if err != nil {
