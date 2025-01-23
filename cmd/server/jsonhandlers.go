@@ -10,10 +10,14 @@ import (
 	"gorono/internal/models"
 	"gorono/internal/privacy"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
 
+// 
+// get one metric handler
+// 
 func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
@@ -36,6 +40,14 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	if err == nil { // if ништяк
 		rwr.WriteHeader(http.StatusOK)
 		json.NewEncoder(rwr).Encode(metr)
+		if metr.ID == "Mallocs" && metr.MType == "gauge" {
+			log.Printf("Server %s %g\n", metr.ID, *metr.Value)
+		}
+		// if metr.MType == "counter" {
+		// 	log.Printf("%s %d\n", metr.ID, *metr.Delta)
+		// } else {
+		// 	log.Printf("%s %g\n", metr.ID, *metr.Value)
+		// }
 		return
 	}
 	if strings.Contains(err.Error(), "unknown metric") {

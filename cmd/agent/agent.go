@@ -37,12 +37,18 @@ func run() error {
 		for i := 0; i < reportInterval/pollInterval; i++ {
 			memStorage = memos.GetMetrixFromOS()
 			cunt++
-			//time.Sleep(time.Duration(pollInterval) * time.Second)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Duration(pollInterval) * time.Second)
+			//time.Sleep(100 * time.Millisecond)
 		}
 		for ind, metr := range memStorage {
 			if metr.ID == "PollCount" && metr.MType == "counter" {
 				memStorage[ind].Delta = &cunt // в сам memStorage, metr - копия
+				break
+			}
+		}
+		for _, metr := range memStorage {
+			if metr.ID == "Mallocs" && metr.MType == "gauge" {
+				log.Printf("Agent %s %g\n", metr.ID, *metr.Value)
 				break
 			}
 		}
