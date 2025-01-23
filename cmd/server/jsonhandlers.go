@@ -105,29 +105,6 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	haHex := req.Header.Get("HashSHA256")
-	haInHeader, err := hex.DecodeString(haHex)
-	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		return
-	}
-	if key != "" {
-		keyB := md5.Sum([]byte(key)) //[]byte(key)
-		ha := privacy.MakeHash(nil, telo, keyB[:])
-		if string(ha) != string(haInHeader) {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
-			return
-		}
-
-		telo, err = privacy.DecryptB2B(telo, keyB[:])
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-			return
-		}
-	}
 	buf := bytes.NewBuffer(telo)
 	metras := []models.Metrics{}
 	err = json.NewDecoder(buf).Decode(&metras)
@@ -152,10 +129,51 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		ha := privacy.MakeHash(nil, coded, keyB[:])
-		haHex = hex.EncodeToString(ha)
+		haHex := hex.EncodeToString(ha)
 		rwr.Header().Add("HashSHA256", haHex)
 	}
 
 	rwr.WriteHeader(http.StatusOK)
 	json.NewEncoder(rwr).Encode(&metras)
+}
+
+func CryptoHandleDecoder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
+
+		if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" {
+			telo, err := io.ReadAll(req.Body)
+			if err != nil {
+				rwr.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+				return
+			}
+			defer req.Body.Close()
+
+			keyB := md5.Sum([]byte(key)) //[]byte(key)
+			ha := privacy.MakeHash(nil, telo, keyB[:])
+			haHex := hex.EncodeToString(ha)
+			if haHex != haInHeader {
+				rwr.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
+				return
+			}
+			telo, err = privacy.DecryptB2B(telo, keyB[:])
+			if err != nil {
+				rwr.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+				return
+			}
+			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
+			if err != nil {
+				io.WriteString(rwr, err.Error())
+				return
+			}
+			for name := range req.Header {
+				hea := req.Header.Get(name)
+				newReq.Header.Add(name, hea)
+			}
+			req = newReq
+		}
+		next.ServeHTTP(rwr, req)
+	})
 }
