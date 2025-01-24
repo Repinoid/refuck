@@ -32,12 +32,19 @@ type Iteration14Suite struct {
 }
 
 func (suite *Iteration14Suite) SetupSuite() {
-	suite.Require().NotEmpty(flagTargetSourcePath, "-source-path non-empty flag required")
-	suite.Require().NotEmpty(flagServerBinaryPath, "-binary-path non-empty flag required")
-	suite.Require().NotEmpty(flagAgentBinaryPath, "-agent-binary-path non-empty flag required")
-	suite.Require().NotEmpty(flagServerPort, "-server-port non-empty flag required")
-	suite.Require().NotEmpty(flagSHA256Key, "-key non-empty flag required")
-	suite.Require().NotEmpty(flagDatabaseDSN, "-database-dsn non-empty flag required")
+	flagTargetSourcePath = "../server/"
+	flagServerBinaryPath= "../server/server.exe"
+	flagAgentBinaryPath= "../agent/agent.exe"
+	flagServerPort = "8080"
+	flagSHA256Key = "asdf"
+	flagDatabaseDSN = "postgres://postgres:passwordas@localhost:5432/forgo"
+
+	// suite.Require().NotEmpty(flagTargetSourcePath, "-source-path non-empty flag required")
+	// suite.Require().NotEmpty(flagServerBinaryPath, "-binary-path non-empty flag required")
+	// suite.Require().NotEmpty(flagAgentBinaryPath, "-agent-binary-path non-empty flag required")
+	// suite.Require().NotEmpty(flagServerPort, "-server-port non-empty flag required")
+	// suite.Require().NotEmpty(flagSHA256Key, "-key non-empty flag required")
+	// suite.Require().NotEmpty(flagDatabaseDSN, "-database-dsn non-empty flag required")
 
 	suite.rnd = rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
 	suite.serverAddress = "http://localhost:" + flagServerPort
@@ -270,7 +277,7 @@ func (suite *Iteration14Suite) TestGaugeGzipHandlers() {
 		return errRedirectBlocked
 	})
 	httpc := resty.New().
-		SetHostURL(suite.serverAddress).
+		SetBaseURL(suite.serverAddress).
 		SetRedirectPolicy(redirPolicy)
 
 	id := "GetSetZip" + strconv.Itoa(suite.rnd.Intn(256))
