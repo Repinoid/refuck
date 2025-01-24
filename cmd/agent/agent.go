@@ -35,20 +35,15 @@ func run() error {
 	for {
 		cunt := int64(0)
 		for i := 0; i < reportInterval/pollInterval; i++ {
-			memStorage = memos.GetMetrixFromOS()
+			memStorage = *memos.GetMetrixFromOS()
 			cunt++
 			time.Sleep(time.Duration(pollInterval) * time.Second)
-			//time.Sleep(100 * time.Millisecond)
+			// log.Printf("\n%d\n", cunt)
+			// time.Sleep(100 * time.Millisecond)
 		}
 		for ind, metr := range memStorage {
 			if metr.ID == "PollCount" && metr.MType == "counter" {
 				memStorage[ind].Delta = &cunt // в сам memStorage, metr - копия
-				break
-			}
-		}
-		for _, metr := range memStorage {
-			if metr.ID == "Mallocs" && metr.MType == "gauge" {
-				log.Printf("Agent %s %g\n", metr.ID, *metr.Value)
 				break
 			}
 		}
@@ -67,7 +62,8 @@ func postBunch(bunch []models.Metrics) error {
 
 	//keyB, _ := privacy.RandBytes(32)
 	var haHex string
-	if key != "" {
+	//	if key != "" {
+	if key == "qwertya" {
 		keyB := md5.Sum([]byte(key)) //[]byte(key)
 
 		coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
@@ -107,11 +103,11 @@ func postBunch(bunch []models.Metrics) error {
 		req.Header.Add("HashSHA256", haHex)
 	}
 
-	_, err = req.
+	resp, err := req.
 		SetDoNotParseResponse(false).
 		Post("/updates/") // slash on the tile
 
-		//	log.Printf("%+v\n", resp)
+	log.Printf("AGENT responce from server %+v\n", resp)
 
 	return err
 }
