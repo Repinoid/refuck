@@ -3,11 +3,13 @@ module gorono
 go 1.22.3
 
 require (
+	github.com/Yandex-Practicum/go-autotests v0.11.2
 	github.com/go-resty/resty/v2 v2.16.3
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.27.0
+	golang.org/x/tools v0.24.0
 )
 
 require (
